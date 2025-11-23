@@ -25,7 +25,7 @@ export class PostsService {
 
   async getFeed(page: number = 1, limit: number = 10, category?: string, userId?: string) {
     const skip = (page - 1) * limit;
-    const match: any = { isActive: true };
+    const match: { isActive: boolean; category?: string } = { isActive: true };
     
     if (category) {
       match.category = category;
@@ -44,11 +44,17 @@ export class PostsService {
 
     const postsWithLikes = posts.map(post => {
       const postObj = post.toObject();
-      const isLiked = userId ? post.likes.some(id => id.toString() === userId) : false;
+      // Verificar si el usuario dio like a este post
+      // Convertir ambos a string para comparación segura
+      const isLiked = userId ? post.likes.some(id => {
+        const likeId = id.toString();
+        const currentUserId = userId.toString();
+        return likeId === currentUserId;
+      }) : false;
       return {
         ...postObj,
-        likesCount: post.likes.length,
-        commentsCount: post.comments.length,
+        likesCount: post.likes ? post.likes.length : 0,
+        commentsCount: post.comments ? post.comments.length : 0,
         isLiked,
         likes: undefined,
       };
@@ -92,11 +98,16 @@ export class PostsService {
 
     const postsWithLikes = posts.map(post => {
       const postObj = post.toObject();
-      const isLiked = post.likes.some(id => id.toString() === userId);
+      // Convertir ambos a string para comparación segura
+      const isLiked = post.likes.some(likeId => {
+        const likeIdStr = likeId.toString();
+        const currentUserIdStr = userId.toString();
+        return likeIdStr === currentUserIdStr;
+      });
       return {
         ...postObj,
-        likesCount: post.likes.length,
-        commentsCount: post.comments.length,
+        likesCount: post.likes ? post.likes.length : 0,
+        commentsCount: post.comments ? post.comments.length : 0,
         isLiked,
         likes: undefined,
       };
@@ -125,18 +136,23 @@ export class PostsService {
     }
 
     const postObj = post.toObject();
-    const isLiked = userId ? post.likes.some(id => id.toString() === userId) : false;
+    // Convertir ambos a string para comparación segura
+    const isLiked = userId ? post.likes.some(likeId => {
+      const likeIdStr = likeId.toString();
+      const currentUserIdStr = userId.toString();
+      return likeIdStr === currentUserIdStr;
+    }) : false;
 
     return {
       ...postObj,
-      likesCount: post.likes.length,
-      commentsCount: post.comments.length,
+      likesCount: post.likes ? post.likes.length : 0,
+      commentsCount: post.comments ? post.comments.length : 0,
       isLiked,
       likes: undefined,
     };
   }
 
-  async findByUser(userId: string, page: number = 1, limit: number = 10) {
+  async findByUser(userId: string, page: number = 1, limit: number = 10, currentUserId?: string) {
     const skip = (page - 1) * limit;
     const posts = await this.postModel
       .find({ author: userId, isActive: true })
@@ -149,8 +165,26 @@ export class PostsService {
 
     const total = await this.postModel.countDocuments({ author: userId, isActive: true });
 
+    // Agregar isLiked a cada post
+    const postsWithLikes = posts.map(post => {
+      const postObj = post.toObject();
+      // Convertir ambos a string para comparación segura
+      const isLiked = currentUserId ? post.likes.some(likeId => {
+        const likeIdStr = likeId.toString();
+        const currentUserIdStr = currentUserId.toString();
+        return likeIdStr === currentUserIdStr;
+      }) : false;
+      return {
+        ...postObj,
+        likesCount: post.likes ? post.likes.length : 0,
+        commentsCount: post.comments ? post.comments.length : 0,
+        isLiked,
+        likes: undefined,
+      };
+    });
+
     return {
-      posts,
+      posts: postsWithLikes,
       pagination: {
         page,
         limit,
@@ -196,19 +230,34 @@ export class PostsService {
       throw new NotFoundException('Publicación no encontrada');
     }
 
-    const isLiked = post.likes.some(id => id.toString() === userId);
+    // Asegurar que likes existe y es un array
+    if (!post.likes) {
+      post.likes = [];
+    }
+
+    // Convertir ambos a string para comparación segura
+    const userIdStr = userId.toString();
+    const isLiked = post.likes.some(id => id.toString() === userIdStr);
     
     if (isLiked) {
-      post.likes = post.likes.filter(id => id.toString() !== userId);
+      post.likes = post.likes.filter(id => id.toString() !== userIdStr);
     } else {
-      post.likes.push(userId as any);
+      // Verificar que no esté ya en el array antes de agregar
+      if (!post.likes.some(id => id.toString() === userIdStr)) {
+        post.likes.push(userId as unknown as typeof post.likes[0]);
+      }
     }
 
     await post.save();
 
+    // Recargar el post para obtener el estado actualizado
+    const updatedPost = await this.postModel.findById(postId);
+    const finalLikesCount = updatedPost?.likes?.length || 0;
+    const finalIsLiked = updatedPost?.likes?.some(id => id.toString() === userIdStr) || false;
+
     return {
-      liked: !isLiked,
-      likesCount: post.likes.length,
+      liked: finalIsLiked,
+      likesCount: finalLikesCount,
     };
   }
 

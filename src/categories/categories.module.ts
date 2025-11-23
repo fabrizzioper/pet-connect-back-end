@@ -4,6 +4,7 @@ import { CategoriesController } from './categories.controller';
 import { CategoriesService } from './categories.service';
 import { Category, CategorySchema } from './schemas/category.schema';
 import { Post, PostSchema } from '../posts/schemas/post.schema';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { Post, PostSchema } from '../posts/schemas/post.schema';
       { name: Category.name, schema: CategorySchema },
       { name: Post.name, schema: PostSchema },
     ]),
+    UsersModule, // Importar UsersModule para que JwtAuthGuard pueda usar UsersService
   ],
   controllers: [CategoriesController],
   providers: [CategoriesService],

@@ -6,6 +6,7 @@ import { Post, PostSchema } from '../posts/schemas/post.schema';
 import { Comment, CommentSchema } from '../comments/schemas/comment.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { Pet, PetSchema } from '../pets/schemas/pet.schema';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { Pet, PetSchema } from '../pets/schemas/pet.schema';
       { name: User.name, schema: UserSchema },
       { name: Pet.name, schema: PetSchema },
     ]),
+    UsersModule, // Importar UsersModule para que JwtAuthGuard pueda usar UsersService
   ],
   controllers: [AdminController],
   providers: [AdminService],
