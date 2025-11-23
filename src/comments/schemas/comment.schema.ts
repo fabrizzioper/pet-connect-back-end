@@ -25,3 +25,5 @@ export const CommentSchema = SchemaFactory.createForClass(Comment);
 CommentSchema.index({ createdAt: -1 });
 CommentSchema.index({ post: 1, createdAt: -1 });
 
+
+

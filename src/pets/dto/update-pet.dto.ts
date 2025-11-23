@@ -27,3 +27,5 @@ export class UpdatePetDto {
   photos?: string[];
 }
 
+
+

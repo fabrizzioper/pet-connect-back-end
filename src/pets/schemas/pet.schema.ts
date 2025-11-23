@@ -34,3 +34,5 @@ export class Pet {
 export const PetSchema = SchemaFactory.createForClass(Pet);
 PetSchema.index({ owner: 1, type: 1 });
 
+
+
