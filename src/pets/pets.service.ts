@@ -12,8 +12,13 @@ export class PetsService {
   ) {}
 
   async create(createPetDto: CreatePetDto, ownerId: string): Promise<PetDocument> {
+    // Si hay fotos pero no profilePicture, usar la primera foto como profilePicture
+    const profilePicture = createPetDto.profilePicture || 
+      (createPetDto.photos && createPetDto.photos.length > 0 ? createPetDto.photos[0] : undefined);
+    
     const pet = new this.petModel({
       ...createPetDto,
+      profilePicture,
       owner: ownerId,
     });
     return pet.save();
@@ -41,7 +46,13 @@ export class PetsService {
       throw new ForbiddenException('No tienes permiso para actualizar esta mascota');
     }
 
-    const updated = await this.petModel.findByIdAndUpdate(id, { $set: updatePetDto }, { new: true }).exec();
+    // Si se actualizan las fotos y no hay profilePicture, usar la primera foto
+    const updateData = { ...updatePetDto };
+    if (updatePetDto.photos && updatePetDto.photos.length > 0 && !updatePetDto.profilePicture) {
+      updateData.profilePicture = updatePetDto.photos[0];
+    }
+
+    const updated = await this.petModel.findByIdAndUpdate(id, { $set: updateData }, { new: true }).exec();
     if (!updated) {
       throw new NotFoundException('Mascota no encontrada');
     }

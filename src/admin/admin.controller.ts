@@ -3,6 +3,7 @@ import {
   Get,
   Delete,
   Put,
+  Post,
   Param,
   Body,
   Query,
@@ -15,6 +16,8 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { BlockUserDto } from './dto/block-user.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { UpdateUserDto } from '../users/dto/update-user.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -50,25 +53,46 @@ export class AdminController {
     };
   }
 
-  @Put('users/:userId/block')
-  async blockUser(
-    @Param('userId') userId: string,
-    @Body() blockUserDto: BlockUserDto,
-  ) {
-    const user = await this.adminService.blockUser(
-      userId,
-      blockUserDto.blocked,
-      blockUserDto.reason,
-    );
+  @Post('users')
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    const user = await this.adminService.createUser(createUserDto);
     return {
-      message: blockUserDto.blocked
-        ? 'Usuario bloqueado exitosamente'
-        : 'Usuario desbloqueado exitosamente',
+      message: 'Usuario creado exitosamente',
       user: {
         _id: user._id,
         username: user.username,
-        isActive: user.isActive,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
       },
+    };
+  }
+
+  @Put('users/:userId')
+  async updateUser(
+    @Param('userId') userId: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    const user = await this.adminService.updateUser(userId, updateUserDto);
+    return {
+      message: 'Usuario actualizado exitosamente',
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        bio: user.bio,
+        profilePicture: user.profilePicture,
+      },
+    };
+  }
+
+  @Delete('users/:userId')
+  async deleteUser(@Param('userId') userId: string) {
+    await this.adminService.deleteUser(userId);
+    return {
+      message: 'Usuario eliminado exitosamente',
     };
   }
 

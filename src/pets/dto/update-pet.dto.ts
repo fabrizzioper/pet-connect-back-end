@@ -25,6 +25,10 @@ export class UpdatePetDto {
   @IsString({ each: true })
   @IsOptional()
   photos?: string[];
+
+  @IsString()
+  @IsOptional()
+  profilePicture?: string;
 }
 
 

@@ -27,6 +27,9 @@ export class Pet {
   @Prop({ type: [String], default: [] })
   photos: string[];
 
+  @Prop()
+  profilePicture: string;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   owner: Types.ObjectId;
 }

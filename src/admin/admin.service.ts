@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { Post, PostDocument } from '../posts/schemas/post.schema';
 import { Comment, CommentDocument } from '../comments/schemas/comment.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Pet, PetDocument } from '../pets/schemas/pet.schema';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { UpdateUserDto } from '../users/dto/update-user.dto';
 
 @Injectable()
 export class AdminService {
@@ -67,6 +70,51 @@ export class AdminService {
     const comment = await this.commentModel.findByIdAndDelete(commentId).exec();
     if (!comment) {
       throw new NotFoundException('Comentario no encontrado');
+    }
+  }
+
+  async createUser(createUserDto: CreateUserDto): Promise<UserDocument> {
+    // Verificar si el usuario o email ya existe
+    const existingUser = await this.userModel.findOne({
+      $or: [
+        { username: createUserDto.username },
+        { email: createUserDto.email },
+      ],
+    }).exec();
+
+    if (existingUser) {
+      throw new ConflictException('El usuario o email ya existe');
+    }
+
+    // Hash de la contraseña
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    const user = new this.userModel({
+      ...createUserDto,
+      password: hashedPassword,
+    });
+
+    return user.save();
+  }
+
+  async updateUser(userId: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      { $set: updateUserDto },
+      { new: true },
+    ).exec();
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return user;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    const user = await this.userModel.findByIdAndDelete(userId).exec();
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
     }
   }
 

@@ -23,6 +23,10 @@ export class CreatePetDto {
   @IsString({ each: true })
   @IsOptional()
   photos?: string[];
+
+  @IsString()
+  @IsOptional()
+  profilePicture?: string;
 }
 
 
